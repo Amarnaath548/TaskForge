@@ -2,7 +2,7 @@ import type { NextFunction, Request, Response } from "express";
 import { AppError } from "../utils/errors.js";
 import jwt, { type JwtPayload } from "jsonwebtoken";
 import { env } from "../config/env.js";
-import { Role } from "@prisma/client";
+import type { Role } from "../../generated/prisma/index.js";
 
 export interface AuthRequest extends Request {
   user?: { userId: string; role: Role };

@@ -1,7 +1,7 @@
 import type { NextFunction, Response } from "express";
 import type { AuthRequest } from "./auth.middleware.js";
 import { AppError } from "../utils/errors.js";
-import { Role } from "@prisma/client";
+import type { Role } from "../../generated/prisma/index.js";
 
 
 export const requireRole = (...roles: Role[])=>

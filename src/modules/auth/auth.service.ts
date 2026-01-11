@@ -42,3 +42,28 @@ export const loginUser = async (email: string, password: string) => {
 
   return { accessToken, refreshToken };
 };
+
+export const refreshAccessToken = async (refreshToken: string) => {
+  try {
+    const payload = jwt.verify(refreshToken, env.REFRESH_SECRET) as {
+      userId: string;
+    };
+
+    const user = await prisma.user.findUnique({
+      where: { id: payload.userId },
+    });
+
+    if (!user) {
+      throw new AppError("User no longer exists", 401);
+    }
+
+    const accessToken = jwt.sign(
+      { userId: user.id, role: user.role },
+      env.ACCESS_SECRET,
+      { expiresIn: env.ACCESS_EXPIRES_IN }
+    );
+    return { accessToken };
+  } catch {
+    throw new AppError("Invalid refresh token", 401);
+  }
+};
