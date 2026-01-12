@@ -1,7 +1,17 @@
 import type { Response } from "express";
 import type { AuthRequest } from "../../middlewares/auth.middleware.js";
-import { createTaskSchema } from "./task.schema.js";
-import { createTask, getTasksForUser } from "./task.service.js";
+import {
+  assignTaskSchema,
+  createTaskSchema,
+  updateStatusSchema,
+} from "./task.schema.js";
+import {
+  assignTask,
+  createTask,
+  getTasksForUser,
+  updateTaskStatus,
+} from "./task.service.js";
+import { AppError } from "../../utils/errors.js";
 
 export const createTaskHandler = async (req: AuthRequest, res: Response) => {
   const input = createTaskSchema.parse(req);
@@ -23,4 +33,33 @@ export const getTasksHandler = async (req: AuthRequest, res: Response) => {
   const tasks = await getTasksForUser(req.user!);
 
   res.json(tasks);
+};
+
+export const updateTaskStatusHandler = async (
+  req: AuthRequest,
+  res: Response
+) => {
+  const input = updateStatusSchema.parse(req);
+
+  if (!req.params.id) throw new AppError("Cannot find task id", 400);
+  const task = await updateTaskStatus(
+    req.params.id,
+    req.user!,
+    input.body.status
+  );
+
+  res.json(task);
+};
+
+export const assignTaskHandler = async (req: AuthRequest, res: Response) => {
+  const input = assignTaskSchema.parse(req);
+
+  if (!req.params.id) throw new AppError("Cannot find task id", 400);
+  const task = await assignTask(
+    req.params.id,
+    req.user!,
+    input.body.assigneeId
+  );
+
+  res.json(task);
 };

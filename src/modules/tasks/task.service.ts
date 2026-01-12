@@ -49,3 +49,58 @@ export const getTasksForUser = async (user: { userId: string; role: Role }) => {
     },
   });
 };
+
+export const updateTaskStatus = async (
+  taskId: string,
+  user: { userId: string; role: string },
+  status: "TODO" | "IN_PROGRESS" | "DONE"
+) => {
+  const task = await prisma.task.findUnique({
+    where: { id: taskId },
+  });
+
+  if (!task) throw new AppError("Task not found", 404);
+
+  const isAdmin = user.role === "ADMIN";
+  const isAssignee = task.assigneeId === user.userId;
+
+  if (!isAdmin && !isAssignee) {
+    throw new AppError("Forbidden", 403);
+  }
+
+  return prisma.task.update({
+    where: { id: taskId },
+    data: { status },
+  });
+};
+
+export const assignTask = async (
+  taskId: string,
+  user: { userId: string; role: string },
+  assigneeId: string | null
+) => {
+  const task = await prisma.task.findUnique({
+    where: { id: taskId },
+  });
+
+  if (!task) throw new AppError("Task not found", 404);
+
+  const isAdmin = user.role === "ADMIN";
+  const isOwner = task.ownerId === user.userId;
+
+  if (!isAdmin && !isOwner) {
+    throw new AppError("Forbidden", 403);
+  }
+
+  if (assigneeId) {
+    const assignee = await prisma.user.findUnique({
+      where: { id: assigneeId },
+    });
+    if (!assignee) throw new AppError("Assignee not found", 404);
+  }
+
+  return prisma.task.update({
+    where: { id: taskId },
+    data: { assigneeId },
+  });
+};
