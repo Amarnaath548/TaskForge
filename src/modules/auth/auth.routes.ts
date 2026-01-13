@@ -4,11 +4,12 @@ import {
   refreshHandler,
   registerHandler,
 } from "./auth.controller.js";
+import { authLimiter } from "../../middlewares/rateLimit.middleware.js";
 
 export const authRouter = Router();
 
-authRouter.post("/register", registerHandler);
+authRouter.post("/register", authLimiter, registerHandler);
 
-authRouter.post("/login", loginHandler);
+authRouter.post("/login", authLimiter, loginHandler);
 
-authRouter.post("/refresh", refreshHandler);
+authRouter.post("/refresh", authLimiter, refreshHandler);
