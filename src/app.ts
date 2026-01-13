@@ -5,13 +5,18 @@ import { router } from "./routes.js";
 import { errorMiddlewar } from "./middlewares/error.middlewares.js";
 import cookieParser from "cookie-parser";
 import { generalLimiter } from "./middlewares/rateLimit.middleware.js";
+import { loggerMiddleware } from "./middlewares/logger.middleware.js";
+import { requestIdMiddleware } from "./middlewares/requestId.middleware.js";
 
 export const app = express();
 
 app.use(helmet());
 app.use(cors());
 app.use(express.json());
+app.use(requestIdMiddleware);
 app.use(cookieParser());
+app.use(loggerMiddleware);
+
 
 
 app.get("/health", (_req, res) => {
