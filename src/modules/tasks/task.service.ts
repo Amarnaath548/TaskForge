@@ -1,6 +1,8 @@
+import { date } from "zod/index.cjs";
 import type { Role } from "../../../generated/prisma/index.js";
 import prisma from "../../config/db.js";
 import { AppError } from "../../utils/errors.js";
+import type { taskQueryInput } from "./task.schema.js";
 
 export const createTask = async (
   userId: string,
@@ -29,25 +31,49 @@ export const createTask = async (
   });
 };
 
-export const getTasksForUser = async (user: { userId: string; role: Role }) => {
-  if (user.role === "ADMIN") {
-    return prisma.task.findMany({
+export const getTasksForUser = async (
+  user: { userId: string; role: Role },
+  filters: taskQueryInput
+) => {
+  
+
+  const where: any= {
+    
+  };
+  if (filters.status) {
+    where.status = filters.status;
+  }
+  if (filters.assigneeId) {
+    where.assigneeId = filters.assigneeId;
+  }
+
+  if (user.role !== "ADMIN") {
+    where.OR= [{ ownerId: user.userId }, { assigneeId: user.userId }]
+  }
+
+  const skip = (filters.page - 1) * filters.limit;
+
+  const [tasks, total] = await Promise.all([
+    prisma.task.findMany({
+      where,
+      skip,
+      take: filters.limit,
       include: {
         owner: { select: { id: true, email: true } },
         assignee: { select: { id: true, email: true } },
       },
-    });
-  }
+    }),
+    prisma.task.count({ where }),
+  ]);
 
-  return prisma.task.findMany({
-    where: {
-      OR: [{ ownerId: user.userId }, { assigneeId: user.userId }],
+  return {
+    date: tasks,
+    meta: {
+      total,
+      page: filters.page,
+      totalPages: Math.ceil(total / filters.limit),
     },
-    include: {
-      owner: { select: { id: true, email: true } },
-      assignee: { select: { id: true, email: true } },
-    },
-  });
+  };
 };
 
 export const updateTaskStatus = async (
@@ -104,3 +130,29 @@ export const assignTask = async (
     data: { assigneeId },
   });
 };
+
+
+export const deleteTask= async (
+  taskId : string,
+  user : {userId: string; role: Role}
+)=>{
+  const task = await prisma.task.findUnique({
+    where:{id:taskId},
+  });
+  if(!task){
+    throw new AppError("Task not found", 404);
+  }
+
+  const isAdmin=user.role==="ADMIN";
+  const isOwner=task.ownerId===user.userId;
+
+  if(!isAdmin && !isOwner){
+    throw new AppError("Forbidden", 403);
+  }
+
+  await prisma.task.delete({
+    where:{id:taskId},
+  });
+
+  return {message: "Task deleted successfully" }
+}

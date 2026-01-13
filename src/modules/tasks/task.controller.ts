@@ -3,11 +3,13 @@ import type { AuthRequest } from "../../middlewares/auth.middleware.js";
 import {
   assignTaskSchema,
   createTaskSchema,
+  taskQuerySchema,
   updateStatusSchema,
 } from "./task.schema.js";
 import {
   assignTask,
   createTask,
+  deleteTask,
   getTasksForUser,
   updateTaskStatus,
 } from "./task.service.js";
@@ -30,7 +32,9 @@ export const createTaskHandler = async (req: AuthRequest, res: Response) => {
 };
 
 export const getTasksHandler = async (req: AuthRequest, res: Response) => {
-  const tasks = await getTasksForUser(req.user!);
+  const filters = taskQuerySchema.parse(req.query);
+
+  const tasks = await getTasksForUser(req.user!, filters);
 
   res.json(tasks);
 };
@@ -62,4 +66,12 @@ export const assignTaskHandler = async (req: AuthRequest, res: Response) => {
   );
 
   res.json(task);
+};
+
+export const deleteTaskHandler = async (req: AuthRequest, res: Response) => {
+  if (!req.params.id) {
+    throw new AppError("Id not found", 400);
+  }
+  const result = await deleteTask(req.params.id, req.user!);
+  res.status(200).json(result);
 };
